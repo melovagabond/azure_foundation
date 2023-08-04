@@ -11,8 +11,9 @@ resource "null_resource" "daevonlab-build" {
   depends_on = [azurerm_container_registry.daevonlab-acr]
 
   provisioner "local-exec" {
-    command     = "az acr build --registry ${azurerm_container_registry.daevonlab-acr.login_server} --file C:\\Users\\DaevonBranche\\Documents\\Projects\\azure_foundation\\docker\\Dockerfile ."
-    interpreter = ["Powershell", "-Command"]
+    command     = "sudo az acr build --registry ${azurerm_container_registry.daevonlab-acr.login_server} --file Dockerfile ."
+    working_dir = "./docker"
+    interpreter = ["/bin/bash", "-c"]
     environment = {
       "DOCKER_BUILDKIT" = "1"
     }
