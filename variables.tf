@@ -22,3 +22,8 @@ variable "container_group" {
   type    = string
   default = "daevonlab-container-group"
 }
+
+variable "imagebuild" {
+  description = "Repository"
+  default     = "daevonlabacr.azurecr.io/my_nginx:latest"
+}
