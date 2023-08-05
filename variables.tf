@@ -1,8 +1,3 @@
-variable "resource_group_name" {
-  type    = string
-  default = "daevonlab-resources"
-}
-
 variable "location" {
   type    = string
   default = "East US"
