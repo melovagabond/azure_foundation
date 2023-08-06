@@ -43,6 +43,15 @@ pipeline {
                 }
             }
         }
+        stage('Get Public IP'){
+            when {
+                expression {params.TERRAFORM_COMMAND == 'apply'}
+            }
+            steps {
+                echo "Public IP of the Azure VM"
+                sh 'terraform state show azurerm_linux_virtual_machine.daevonlab-vm'
+            }
+        }
         stage('Clean Workspace') {
             when {
                 expression {params.TERRAFORM_COMMAND == 'destroy'}
