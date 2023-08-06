@@ -26,7 +26,7 @@ pipeline {
                 -Dsonar.projectKey=Azure-4495 \
                 -Dsonar.sources=. \
                 -Dsonar.host.url=http://10.0.0.250:9000 \
-                -Dsonar.token=sqp_64393fd09e737cd1b9d102ba7873c8458f66e845'
+                -Dsonar.token=\$SONAR_AZURE'
             }
         }
         stage('Terraform') {
