@@ -18,10 +18,10 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
                 sh 'mvn clean verify sonar:sonar \
-                    -Dsonar.projectKey=azure_foundation \
+                    -Dsonar.projectKey=Azure-4495 \
                     -Dsonar.projectName="Azure_Foundation" \
                     -Dsonar.host.url=http://10.0.0.250:9000 \
-                    -Dsonar.login=sqp_ac3b6f9838c2f78497038d1dff40cf67f41eaa69'
+                    -Dsonar.login=sqp_c81a18a6cea06b6518f8cbd56929169ee3d4fb64'
             }
         }
         stage('Terraform') {
