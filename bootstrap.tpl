@@ -20,15 +20,16 @@ done
 sudo chmod 666 /var/run/docker.sock
 
 # Download your project's files to the instance
-cd /home/dae || exit
+cd ~ || exit
 git clone https://github.com/melovagabond/azure_foundation.git
+sudo chmod -R 777 ~/azure_foundation
 cd ~/azure_foundation/docker || exit
 
 # Create certificates directory and generate self-signed certificate
-mkdir -p certs
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ./certs/server.key -out ./certs/server.crt -subj "/C=US/ST=Pennsylvania/L=Philadelphia/O=Daevonlab/OU=R&D/CN=localhost"
-chmod -R 777 ./certs
+sudo mkdir -p certs
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ./certs/server.key -out ./certs/server.crt -subj "/C=US/ST=Pennsylvania/L=Philadelphia/O=Daevonlab/OU=R&D/CN=localhost"
+sudo chmod -R 777 ./certs
 
 # Build and run the Docker container
-docker build -t webpage .
-docker run -d -p 443:443 --name webpage-container webpage
+sudo docker build -t webpage .
+sudo docker run -d -p 443:443 --name webpage-container webpage
