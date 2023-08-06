@@ -3,7 +3,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.0.0"
+      version = "3.68.0"
     }
   }
 }
@@ -12,6 +12,13 @@ provider "azurerm" {
   features {}
 }
 
+# Kubernetes Provider Config
+provider "kubernetes" {
+  host                   = azurerm_kubernetes_cluster.aks.kube_config[0].host
+  client_certificate     = base64decode(azurerm_kubernetes_cluster.aks.kube_config[0].client_certificate)
+  client_key             = base64decode(azurerm_kubernetes_cluster.aks.kube_config[0].client_key)
+  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.aks.kube_config[0].cluster_ca_certificate)
+}
 resource "azurerm_resource_group" "daevonlab_rg" {
   name     = "daevonlab-resources"
   location = "East US"
@@ -97,34 +104,122 @@ resource "azurerm_network_interface" "daevonlab_nic" {
   }
 }
 
-# Linux Vm
+# Build Container Registry
+resource "azurerm_container_registry" "daevonlab-acr" {
+  name                = "daevonlabacr"
+  resource_group_name = azurerm_resource_group.daevonlab_rg.name
+  location            = var.location
+  sku                 = "Basic"
+  admin_enabled       = true
+}
 
-resource "azurerm_linux_virtual_machine" "daevonlab-vm" {
-  name                  = "daevonlab-vm"
-  resource_group_name   = azurerm_resource_group.daevonlab_rg.name
-  location              = var.location
-  size                  = "Standard_B1s"
-  computer_name         = "daevonlab-vm"
-  admin_username        = "dae"
-  network_interface_ids = [azurerm_network_interface.daevonlab_nic.id]
+# Build Docker image
+resource "null_resource" "daevonlab-build" {
 
-  custom_data = filebase64("bootstrap.tpl")
+  depends_on = [azurerm_container_registry.daevonlab-acr]
+  provisioner "local-exec" {
+    command     = "az acr build --registry ${azurerm_container_registry.daevonlab-acr.login_server} --image mywebsite:latest --file ./Dockerfile ."
+    interpreter = ["/bin/bash", "-c"]
+    environment = {
+      "DOCKER_BUILDKIT" = "1"
+    }
+    working_dir = "./docker"
+  }
+}
 
-  admin_ssh_key {
-    username   = "dae"
-    public_key = file("~/.ssh/daevonlabazurekey.pub")
+# Kubernetes Cluster
+
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = "daevonlab-aks-cluster"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.daevonlab_rg.name
+  dns_prefix          = "daevonlabaks"
+  kubernetes_version  = "1.26"
+  node_resource_group = "daevonlab-aks-nodes"
+  default_node_pool {
+    name       = "default"
+    node_count = 3
+    vm_size    = "standard_D2_v2"
   }
 
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
+  identity {
+    type = "SystemAssigned"
+  }
+  tags = {
+    environment = "dev"
+  }
+}
+
+# Name Space
+
+resource "kubernetes_namespace" "daevonlab_ns" {
+  metadata {
+    name = "daevonlab-ns"
+  }
+}
+
+# Kubernetes Deployments Service
+
+resource "kubernetes_deployment" "daevonlab_website" {
+  metadata {
+    name      = "daevonlab-website"
+    namespace = kubernetes_namespace.daevonlab_ns.metadata[0].name
+    labels = {
+      app = "daevonlab-website"
+    }
   }
 
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts-gen2"
-    version   = "latest"
+  spec {
+    replicas = 3
+
+    selector {
+      match_labels = {
+        app = "daevonlab-website"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "daevonlab-website"
+        }
+      }
+
+      spec {
+        container {
+          name  = "daevonlab-website"
+          image = "daevonlabacr.azurecr.io/mywebsite:latest"
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "daevonlab_website" {
+  metadata {
+    name      = "daevonlab-website"
+    namespace = kubernetes_namespace.daevonlab_ns.metadata[0].name
   }
 
+  spec {
+    selector = {
+      app = kubernetes_deployment.daevonlab_website.metadata[0].labels.app
+    }
+
+    port {
+      port        = 80
+      target_port = 80
+    }
+
+    type = "LoadBalancer"
+  }
+}
+
+# Data block to get LoadBalancer IP address
+data "external" "get_load_balancer_ip" {
+  depends_on = [kubernetes_service.daevonlab_website]
+  program    = ["sh", "-c", "kubectl get services daevonlab-website -n daevonlab-ns -o json | jq -r '.status.loadBalancer.ingress[0].ip'"]
 }

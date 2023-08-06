@@ -1,4 +1,4 @@
 # Display the ip the webpage is hosted on
-output "public_ip_address" {
-  value = azurerm_public_ip.daevonlab_public_ip.ip_address
+output "website_ip" {
+  value = data.external.get_load_balancer_ip.result
 }
