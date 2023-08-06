@@ -38,3 +38,4 @@ terraform.rc
 
 # Environment variable files
 .envrc
+*.tfplan

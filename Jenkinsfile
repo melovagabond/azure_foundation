@@ -9,12 +9,18 @@ pipeline {
 
     stages {
         stage('Clone Repository') {
+            when {
+                expression {params.TERRAFORM_COMMAND == 'plan' || params.TERRAFORM_COMMAND == 'apply'}
+            }
             steps {
                 echo "Cloning the remote Git repository..."
                 git branch: 'develop', url: 'https://github.com/melovagabond/azure_foundation.git'
             }
         }
         stage('SonarQube Analysis') {
+            when {
+                expression {params.TERRAFORM_COMMAND == 'plan' || params.TERRAFORM_COMMAND == 'apply'}
+            }
             environment {
                 PATH = "${PATH}:/opt/sonar-scanner/bin"
             }
@@ -61,6 +67,14 @@ pipeline {
             when {
                 expression {params.TERRAFORM_COMMAND == 'destroy'}
             }
+            steps {
+                cleanWs()
+            }
+        }
+    }
+    post {
+        failure {
+            echo "Somthing went wrong! Cleaning workspace"
             steps {
                 cleanWs()
             }
