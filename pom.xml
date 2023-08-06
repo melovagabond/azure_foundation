@@ -62,5 +62,6 @@
             </plugin>
         </plugins>
     </build>
-
+    <sonar.sources>${basedir}</sonar.sources>
+    <sonar.language>terraform</sonar.language>
 </project>
