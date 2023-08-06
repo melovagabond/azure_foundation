@@ -21,16 +21,12 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
 
-                // Install SonarScanner if not already installed (skip if already installed)
-                sh 'which sonar-scanner || curl -L -o /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip && unzip /tmp/sonar-scanner.zip -d /tmp && sudo mv /tmp/sonar-scanner-* /opt/sonar-scanner'
-                
                 // Run SonarScanner
                 sh 'sonar-scanner \
-                    -Dsonar.projectKey=Azure-4495 \
-                    -Dsonar.projectName="Azure_Foundation" \
-                    -Dsonar.sources=src \
-                    -Dsonar.host.url=http://10.0.0.250:9000 \
-                    -Dsonar.login=sqp_c81a18a6cea06b6518f8cbd56929169ee3d4fb64'
+                -Dsonar.projectKey=Azure-4495 \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=http://10.0.0.250:9000 \
+                -Dsonar.token=sqp_64393fd09e737cd1b9d102ba7873c8458f66e845'
             }
         }
         stage('Terraform') {
