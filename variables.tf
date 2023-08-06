@@ -1,24 +1,38 @@
 variable "location" {
-  type    = string
-  default = "East US"
+  type        = string
+  default     = "East US"
+  description = "Location for all resource groups"
+}
+variable "image" {
+  type        = string
+  description = "Container image to deploy. Should be of the form repoName/imagename:tag for images stored in public Docker Hub, or a fully qualified URI for other registries. Images from private registries require additional registry credentials."
+  default     = "mcr.microsoft.com/azuredocs/aci-helloworld"
 }
 
-variable "bck_address_pool" {
-  type    = string
-  default = "daevonlab-backend-pool"
+variable "port" {
+  type        = number
+  description = "Port to open on the container and the public IP address."
+  default     = 80
 }
 
-variable "a_nic" {
-  type    = string
-  default = "daevonlab-nic"
+variable "cpu_cores" {
+  type        = number
+  description = "The number of CPU cores to allocate to the container."
+  default     = 1
 }
 
-variable "container_group" {
-  type    = string
-  default = "daevonlab-container-group"
+variable "memory_in_gb" {
+  type        = number
+  description = "The amount of memory to allocate to the container in gigabytes."
+  default     = 2
 }
 
-variable "imagebuild" {
-  description = "Repository"
-  default     = "daevonlabacr.azurecr.io/my_nginx:latest"
+variable "restart_policy" {
+  type        = string
+  description = "The behavior of Azure runtime if container has stopped."
+  default     = "Always"
+  validation {
+    condition     = contains(["Always", "Never", "OnFailure"], var.restart_policy)
+    error_message = "The restart_policy must be one of the following: Always, Never, OnFailure."
+  }
 }

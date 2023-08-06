@@ -27,81 +27,11 @@ resource "azurerm_resource_group" "daevonlab_rg" {
   }
 }
 
-# Networking
-
-resource "azurerm_virtual_network" "daevonlab_vnet" {
-  name                = "daevonlab-vnet"
-  address_space       = ["10.123.0.0/16"]
-  location            = var.location
-  resource_group_name = azurerm_resource_group.daevonlab_rg.name
-
-  tags = {
-    environment = "dev"
-  }
-}
-
-resource "azurerm_subnet" "daevonlab_public_subnet" {
-  name                 = "daevonlab-public-subnet"
-  resource_group_name  = azurerm_resource_group.daevonlab_rg.name
-  virtual_network_name = azurerm_virtual_network.daevonlab_vnet.name
-  address_prefixes     = ["10.123.1.0/24"]
-}
-
-# Security Group
-resource "azurerm_network_security_group" "daevonlab_nsg" {
-  name                = "daevonlab-nsg"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.daevonlab_rg.name
-
-  tags = {
-    environment = "dev"
-  }
-}
-
-resource "azurerm_network_security_rule" "daevonlab_dev_rule" {
-  name                        = "daevonlab-dev-rule"
-  priority                    = 100
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_range      = "443"
-  source_address_prefix       = "*"
-  destination_address_prefix  = "*"
-  resource_group_name         = azurerm_resource_group.daevonlab_rg.name
-  network_security_group_name = azurerm_network_security_group.daevonlab_nsg.name
-}
-resource "azurerm_subnet_network_security_group_association" "daevonlab_sga" {
-  subnet_id                 = azurerm_subnet.daevonlab_public_subnet.id
-  network_security_group_id = azurerm_network_security_group.daevonlab_nsg.id
-
-}
-
-resource "azurerm_public_ip" "daevonlab_public_ip" {
-  name                = "daevonlab_ip"
-  resource_group_name = azurerm_resource_group.daevonlab_rg.name
-  location            = var.location
-  allocation_method   = "Dynamic"
-  tags = {
-    environment = "dev"
-  }
-}
-
-resource "azurerm_network_interface" "daevonlab_nic" {
-  name                = "daevonlab_nic"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.daevonlab_rg.name
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.daevonlab_public_subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.daevonlab_public_ip.id
-  }
-
-  tags = {
-    environment = "dev"
-  }
+# Role to allow pull from ACR
+resource "azurerm_role_assignment" "aks_acr_pull_role" {
+  scope                = azurerm_container_registry.daevonlab-acr.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_kubernetes_cluster.aks.identity[0].principal_id
 }
 
 # Build Container Registry
@@ -111,20 +41,6 @@ resource "azurerm_container_registry" "daevonlab-acr" {
   location            = var.location
   sku                 = "Basic"
   admin_enabled       = true
-}
-
-# Build Docker image
-resource "null_resource" "daevonlab-build" {
-
-  depends_on = [azurerm_container_registry.daevonlab-acr]
-  provisioner "local-exec" {
-    command     = "az acr build --registry ${azurerm_container_registry.daevonlab-acr.login_server} --image mywebsite:latest --file ./Dockerfile ."
-    interpreter = ["/bin/bash", "-c"]
-    environment = {
-      "DOCKER_BUILDKIT" = "1"
-    }
-    working_dir = "./docker"
-  }
 }
 
 # Kubernetes Cluster
@@ -138,8 +54,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   node_resource_group = "daevonlab-aks-nodes"
   default_node_pool {
     name       = "default"
-    node_count = 3
-    vm_size    = "standard_D2_v2"
+    node_count = 2
+    vm_size    = "Standard_D2_v2"
   }
 
   identity {
@@ -188,15 +104,16 @@ resource "kubernetes_deployment" "daevonlab_website" {
       spec {
         container {
           name  = "daevonlab-website"
-          image = "daevonlabacr.azurecr.io/mywebsite:latest"
+          image = var.image
           port {
-            container_port = 80
+            container_port = var.port
           }
         }
       }
     }
   }
 }
+
 
 resource "kubernetes_service" "daevonlab_website" {
   metadata {
@@ -210,16 +127,10 @@ resource "kubernetes_service" "daevonlab_website" {
     }
 
     port {
-      port        = 80
-      target_port = 80
+      port        = var.port
+      target_port = var.port
     }
 
     type = "LoadBalancer"
   }
-}
-
-# Data block to get LoadBalancer IP address
-data "external" "get_load_balancer_ip" {
-  depends_on = [kubernetes_service.daevonlab_website]
-  program    = ["sh", "-c", "kubectl get services daevonlab-website -n daevonlab-ns -o json | jq -r '.status.loadBalancer.ingress[0].ip'"]
 }

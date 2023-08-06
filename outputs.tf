@@ -1,4 +1,4 @@
-# Display the ip the webpage is hosted on
-output "website_ip" {
-  value = data.external.get_load_balancer_ip.result
+# Display the ip the webpage is hosted 
+output "load_balancer_ip" {
+  value = kubernetes_service.daevonlab_website.status[0].load_balancer[0].ingress[0].ip
 }

@@ -11,7 +11,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 echo "Cloning the remote Git repository..."
-                git branch: 'develop', url: 'https://github.com/melovagabond/azure_foundation.git'
+                git branch: 'kubernetes', url: 'https://github.com/melovagabond/azure_foundation.git'
             }
         }
         stage('SonarQube Analysis') {
@@ -23,7 +23,7 @@ pipeline {
 
                 // Run SonarScanner
                 sh 'sonar-scanner \
-                -Dsonar.projectKey=Azure-4495 \
+                -Dsonar.projectKey=Azure_Kubectl \
                 -Dsonar.sources=. \
                 -Dsonar.host.url=http://10.0.0.250:9000 \
                 -Dsonar.token=\$SONAR_AZURE'
@@ -46,15 +46,6 @@ pipeline {
                         error('Invalid option selected!')
                     }
                 }
-            }
-        }
-        stage('Get Public IP'){
-            when {
-                expression {params.TERRAFORM_COMMAND == 'apply'}
-            }
-            steps {
-                echo "Public IP of the Azure VM"
-                sh 'terraform state show azurerm_linux_virtual_machine.daevonlab-vm'
             }
         }
         stage('Clean Workspace') {
