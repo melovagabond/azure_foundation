@@ -1,0 +1,66 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>Azure_Foundation</artifactId>
+    <version>1.0.0</version>
+
+    <name>Azure_Foundation</name>
+    <description>This is a coding challenge.</description>
+    <url>https://github.com/melovagabond/azure_foundation</url>
+
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>melovagabond</id>
+            <name>Daevon Melo</name>
+            <email>daevon@example.com</email>
+            <url>https://github.com/melovagabond</url>
+            <organization>Example Organization</organization>
+            <organizationUrl>https://example.com</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <properties>
+        <!-- Define project properties here -->
+        <java.version>11</java.version>
+        <sonar.host.url>http://10.0.0.250:9000</sonar.host.url>
+    </properties>
+
+    <dependencies>
+        <!-- Define project dependencies here -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Other dependencies can be added here -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven plugins configuration goes here -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.9.0.2155</version>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
